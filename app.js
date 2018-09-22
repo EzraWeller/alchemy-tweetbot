@@ -6,7 +6,7 @@ require("dotenv").config();
 const avatarAddress = process.env.AVATAR_ADDRESS; // the avatar address of the DAO
 const proposalBaseURL = `https://alchemy.daostack.io/#/dao/${avatarAddress}/proposal/`;
 const apiURL = "https://daostack-alchemy.herokuapp.com";
-const tweetInterval = 1 /* minutes */ * 60000 /* miliseconds/minute */
+const tweetInterval = 15 /* minutes */ * 60000 /* miliseconds/minute */
 
 // create twit instance
 const twitterAccount = new twit({
