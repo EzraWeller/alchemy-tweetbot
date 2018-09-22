@@ -13,7 +13,6 @@
     "@daostack/arc.js": "0.0.0-alpha.81",
     "axios": "^0.18.0",
     "dotenv": "^6.0.0",
-    "growl": "^1.10.5",
     "twit": "^2.2.11"
   }
 }
