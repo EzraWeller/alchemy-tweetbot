@@ -10,9 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@daostack/arc.js": "0.0.0-alpha.81",
     "axios": "^0.18.0",
     "dotenv": "^6.0.0",
+    "npm": "^6.4.1",
     "twit": "^2.2.11"
   }
 }
