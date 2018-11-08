@@ -56,6 +56,7 @@ const newProposals = async (proposals) => {
       newProposals.unshift(val);
       count++;
     } else {
+      if(count > 0) { console.log("PROPOSALS-FOUND-MARKER") }
       console.log(`${count} new proposals found in the last ${tweetInterval/60000} minutes`);
       return val.submittedTime < cutoffTime;
     }
