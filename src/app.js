@@ -106,10 +106,15 @@ const tweetNewProposals = async (dataURL, twitterDict) => {
 
     // tweet new proposals of all three types
     console.log("Proposals to tweet:", proposalsToTweet);
-    await tweet(proposalsToTweet.newProposals, "new", "New proposal posted to Genesis", twitInstance);
-    await tweet(proposalsToTweet.newBoostedProposals, "boosted", "Genesis proposal boosted", twitInstance);
-    await tweet(proposalsToTweet.newBoostedProposals, "passed", "Genesis proposal passed", twitInstance);
-
+    if(proposalsToTweet.newProposals.length > 0) {
+      await tweet(proposalsToTweet.newProposals, "new", "New proposal posted to Genesis", twitInstance);
+    }
+    if(proposalsToTweet.newBoostedProposals.length > 0) {
+      await tweet(proposalsToTweet.newBoostedProposals, "boosted", "Genesis proposal boosted", twitInstance);
+    }
+    if(proposalsToTweet.newPassedProposals.length > 0) {
+      await tweet(proposalsToTweet.newPassedProposals, "passed", "Genesis proposal passed", twitInstance);
+    }
   } catch (err) {
     console.log(err);
   }
