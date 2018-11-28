@@ -38,6 +38,12 @@ const getTweets = async (twitterDict) => {
   const tweets = [];
   const response = await twitterDict.get('statuses/user_timeline',
     { id_str: '1043553688424452097', count: 200 });
+    /*
+    NOTE: Not sure what this will do when there are > 200 tweets, and
+    if the DAO is ever producing >200 proposals per 3 day period, this
+    function will probably need to be adjusted to grab more tweets
+    (run the function more than once, stop if it grabs less than 200 tweets?).
+    */
   response.data.forEach((tweet) => {
     tweets.push(tweet.text.slice(0, -24));
   });
