@@ -10,7 +10,11 @@ const twitterFakeId = {
 
 const testData = require("./test-data/test.json");
 const testProposalsArray = require("./test-data/testProposalsArray.json");
-const testTweets = require("./test-data/testTweets.json");
+const testTweets = [
+  'New proposal posted to Genesis: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas lacinia urna sed…"',
+  'Genesis proposal boosted: "test newly boosted proposal with link twer.fasdfaslkj.org/asdf"',
+  'Genesis proposal passed: "test &amp; newly &amp; passed &amp; proposal"'
+];
 const testProposalsDict = require("./test-data/testProposalsDict.json");
 
 passedCount = 0;
