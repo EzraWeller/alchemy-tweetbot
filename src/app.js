@@ -28,45 +28,108 @@ const twitterAccount = (dict) => {
 // function for grabbing the cache of DAO data
 const getProposals = async (url) => {
   console.log("getting server proposals");
-  response = await axios.get(url);
+  const response = await axios.get(url);
   return response.data.proposals;
 }
 
-// function for grabbing recent proposals from the cache
-const newProposals = async (proposals) => {
-  const cutoffTime = Math.floor(Date.now()/1000) - Math.floor(tweetInterval/1000);
+// function to grab all tweets from the twitter account
+const getTweets = async (twitterDict) => {
+  console.log("getting already tweeted tweets");
+  const tweets = [];
+  const response = await twitterDict.get('statuses/user_timeline',
+    { id_str: '1043553688424452097', count: 200 });
+  response.data.forEach((tweet) => {
+    tweets.push(tweet.text.slice(0, -24));
+  });
+  return tweets;
+}
 
-  console.log(`getting proposals submitted in the last ${tweetInterval/60000} minutes`);
-  const proposalsNewToOld = Object.values(proposals).slice(0).reverse()
-  var count = 0;
-  const newProposals = [];
-  const newBoostedProposals = [];
-  const newPassedProposals = [];
-  proposalsNewToOld.some((val) => {
-    if(val.executionTime >= cutoffTime) {
-      console.log("newly passed proposal found.");
-      newPassedProposals.unshift(val);
-      count++;
-    } else if(val.boostedTime >= cutoffTime) {
-      console.log("newly boosted proposal found.");
-      newBoostedProposals.unshift(val);
-      count++;
-    } else if(val.submittedTime >= cutoffTime) {
-      console.log("new proposal found.");
-      newProposals.unshift(val);
-      count++;
-    } else {
-      if(count > 0) { console.log("PROPOSALS-FOUND-MARKER") }
-      console.log(`${count} new proposals found in the last ${tweetInterval/60000} minutes`);
-      return val.submittedTime < cutoffTime;
+// check if query is in array
+function findMatch(query, array) {
+  let matchFound = false;
+  array.forEach((item) => {
+    if(query === item) {
+      matchFound = true;
+    }
+    // if not a match, compare word by word, allowing 1 or 2 mismatches
+    if(matchFound === false) {
+      let queryA = query.split(' ');
+      let itemA = item.split(' ');
+      let mismatches = 0;
+      let wordIndex = 0;
+      queryA.forEach((qWord) => {
+        if(qWord !== itemA[wordIndex]) {
+          ++mismatches;
+        }
+        ++wordIndex;
+      })
+      if(mismatches <= 2) {
+        matchFound = true;
+      }
     }
   });
-  const results = {
-    "newProposals": newProposals,
-    "newBoostedProposals": newBoostedProposals,
-    "newPassedProposals": newPassedProposals
+  return matchFound;
+}
+
+// function to find proposals that haven't yet been tweeted about
+const tweetableProposals = (tweets, proposals) => {
+  // replace ampersands
+  function removeAmps(string) {
+    let noAmps = string.replace(/&(?!amp;)/g, '&amp;');
+    return noAmps;
   }
-  return results;
+  console.log("finding untweeted proposals");
+  const proposalsToTweet = {newProposals: [], newBoostedProposals: [], newPassedProposals: []};
+  Object.keys(proposals).forEach((proposalId) => {
+    if(proposals[proposalId].executionTime === 0 && // check for proposals not boosted or passed
+      proposals[proposalId].boostedTime === 0 &&
+      proposals[proposalId].submittedTime > ((Math.floor(Date.now()/1000))-18144e2)) {
+          let nTweet = `New proposal posted to Genesis: "${proposals[proposalId].title}"`;
+          if(nTweet.length > 115) { nTweet = nTweet.slice(0,115)+"…"}
+          nTweet = removeAmps(nTweet);
+
+          if(proposals[proposalId].submittedTime + // check for expired regular proposals
+             proposals[proposalId].preBoostedVotePeriodLimit <
+             Math.floor(Date.now()/1000)) {
+          // skip it
+          } else if(findMatch(nTweet, tweets) === false) {
+            proposalsToTweet.newProposals.push(proposals[proposalId]);
+          }
+
+    } else if(proposals[proposalId].executionTime === 0 && // check for boosted proposals not passed
+      proposals[proposalId].boostedTime > 0) {
+          let bTweet = `Genesis proposal boosted: "${proposals[proposalId].title}"`;
+          if(bTweet.length > 115) { bTweet = bTweet.slice(0,115)+"…"}
+          bTweet = removeAmps(bTweet);
+          if(proposals[proposalId].boostedTime + // check for expired boosted proposals
+             proposals[proposalId].boostedVotePeriodLimit <
+             Math.floor(Date.now()/1000)) {
+            // skip it
+          } else if(findMatch(bTweet, tweets) === false) {
+            proposalsToTweet.newBoostedProposals.push(proposals[proposalId]);
+          }
+
+    } else if(proposals[proposalId].executionTime > ((Math.floor(Date.now()/1000))-12096e2)) {
+      // check for passed proposals
+          let pTweet = `Genesis proposal passed: "${proposals[proposalId].title}"`;
+          if(pTweet.length > 115) { pTweet = pTweet.slice(0,115)+"…"}
+          pTweet = removeAmps(pTweet);
+
+          if(findMatch(pTweet, tweets) === false) {
+            proposalsToTweet.newPassedProposals.push(proposals[proposalId]);
+          }
+
+    }
+  })
+  const total = (proposalsToTweet.newProposals.length +
+                 proposalsToTweet.newBoostedProposals.length +
+                 proposalsToTweet.newPassedProposals.length);
+  console.log("Found--");
+  console.log(`${proposalsToTweet.newProposals.length} untweeted new proposals,`);
+  console.log(`${proposalsToTweet.newBoostedProposals.length} untweeted newly boosted proposals,`);
+  console.log(`and ${proposalsToTweet.newPassedProposals.length} untweeted newly passed proposals, `);
+  console.log(`for ${total} out of ${Object.keys(proposals).length} total.`)
+  return proposalsToTweet;
 }
 
 // function to tweet specific set of proposals
@@ -95,13 +158,15 @@ const tweetNewProposals = async (dataURL, twitterDict) => {
     // grab all data, then select new proposals
     const twitInstance = await twitterAccount(twitterDict);
     const proposals = await getProposals(dataURL);
-    const proposalsToTweet = await newProposals(proposals);
+    const tweets = await getTweets(twitInstance);
+    const proposalsToTweet = await tweetableProposals(tweets, proposals);
 
     // if no tweetable proposals are found, stop
     if(proposalsToTweet.newProposals.length === 0 &&
         proposalsToTweet.newBoostedProposals.length === 0 &&
         proposalsToTweet.newPassedProposals.length === 0) {
-      return
+      console.log("Not sending any new tweets.");
+      return;
     }
 
     // tweet new proposals of all three types
@@ -123,7 +188,8 @@ const tweetNewProposals = async (dataURL, twitterDict) => {
 module.exports = {
   twitInstance: twitterAccount,
   getDataCache: getProposals,
-  filterNewProposals: newProposals,
+  getOldTweets: getTweets,
+  getTweetableProposals: tweetableProposals,
   tweetProposalSet: tweet,
   tweetAllNewProposals: tweetNewProposals,
   twit: twitterId,

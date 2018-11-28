@@ -9,7 +9,9 @@ const twitterFakeId = {
 }
 
 const testData = require("./test-data/test.json");
-const testProposals = require("./test-data/test-proposals.json");
+const testProposalsArray = require("./test-data/testProposalsArray.json");
+const testTweets = require("./test-data/testTweets.json");
+const testProposalsDict = require("./test-data/testProposalsDict.json");
 
 passedCount = 0;
 failedCount = 0;
@@ -52,23 +54,30 @@ const testGetDataCache = async () => {
   }
 }
 
-const testNewProposals = async () => {
-  console.log("newProposals should grab only proposals with proper times and output a dict with correct keys.");
+const testGetTweetableProposals = async () => {
+  console.log("tweetableProposals should find untweeted proposals, including edge cases");
   try {
-    const testCache = testData.data.proposals;
-    testProposals[0].submittedTime = Math.floor(Date.now()/1000);
-    testProposals[1].boostedTime = Math.floor(Date.now()/1000);
-    testProposals[2].executionTime = Math.floor(Date.now()/1000);
-    testCache["0x3f50f3b6b275ba4ba7179ec62f1c072079909c44809c916c3a09304d0b60000"] = testProposals[0];
-    testCache["0x3f50f3b6b275ba4ba7179ec62f1c072079909c44809c916c3a09304d0b00000"] = testProposals[1];
-    testCache["0x3f50f3b6b275ba4ba7179ec62f1c072079909c44809c916c3a09304d0000000"] = testProposals[2];
-    const proposalDict = await tweetbot.filterNewProposals(testCache);
-    if (proposalDict.newProposals.length > 0) {
+    /*
+    takes an array of the texts of tweets of forms like 'Genesis proposal passed:
+    "Proposal description"' (make sure to include wacky links, ''&amp;'s, and cutoff
+    tweets with '…'s) and a dict of proposals (include regular links, '&'s, and
+    too long descriptions)
+    */
+    const rightNow = Math.floor(Date.now()/1000);
+    testProposalsDict[Object.keys(testProposalsDict)[0]].submittedTime = rightNow;
+    testProposalsDict[Object.keys(testProposalsDict)[1]].submittedTime = rightNow;
+    testProposalsDict[Object.keys(testProposalsDict)[2]].boostedTime = rightNow;
+    testProposalsDict[Object.keys(testProposalsDict)[3]].executedTime = rightNow;
+    const tweetableProposals = await tweetbot.getTweetableProposals(testTweets, testProposalsDict);
+    const total = (tweetableProposals.newProposals.length +
+                   tweetableProposals.newBoostedProposals.length +
+                   tweetableProposals.newPassedProposals.length);
+    if(total === 1) {
       console.log("--Passed.");
       passedCount += 1;
     } else {
-      console.log("--Failed")
-      console.log("New proposals failed to be found.");
+      console.log("--Failed");
+      console.log("Didn't find the correct number of new proposals to tweet.");
       failedCount += 1;
     }
   } catch(err) {
@@ -78,19 +87,26 @@ const testNewProposals = async () => {
   }
 }
 
-// not sure how to test this
-/*
+function mockTwit() {
+  let postedTexts = [];
+  return {
+    post: (text, dict, callback) => {
+      postedTexts.push(dict.status)
+    },
+    getResults: () => {
+      return postedTexts
+    }
+  }
+}
+
 const testTweet = async () => {
   console.log("tweet function should try to tweet about all the proposals in the new proposals dict");
   try {
-    const twitter = await tweetbot.twitInstance(twitterFakeId);
-    const testCache = testData.data.proposals;
-    testProposals[0].submittedTime = Math.floor(Date.now()/1000);
-    testCache["0x3f50f3b6b275ba4ba7179ec62f1c072079909c44809c916c3a09304d0b60000"] = testProposals[0];
-    const proposalsToTweet = await tweetbot.filterNewProposals(testCache);
-    const tweetOutput = await tweetbot.tweetProposalSet(proposalsToTweet.newProposals,
+    const twitter = await mockTwit();
+    const tweetOutput = await tweetbot.tweetProposalSet(testProposalsArray,
                               "new", "New proposal posted to Genesis", twitter);
-    if(true) {
+    const results = twitter.getResults();
+    if(results[0].slice(0,19) === 'New proposal posted') {
       console.log("--Passed.");
       passedCount += 1;
     } else {
@@ -104,15 +120,16 @@ const testTweet = async () => {
     failedCount += 1;
   }
 }
-*/
 
 // run all tests
 const runAllTests = async () => {
   console.log("Running all tests:")
   await testTwitInstance();
   await testGetDataCache();
-  await testNewProposals();
+  await testGetTweetableProposals();
+  await testTweet();
   console.log(`${passedCount} tests passed. ${failedCount} tests failed.`);
+  return [passedCount, failedCount];
 }
 
-runAllTests();
+module.exports = { runAllTests: runAllTests }
