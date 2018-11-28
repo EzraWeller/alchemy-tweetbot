@@ -44,7 +44,6 @@ const getTweets = async (twitterDict) => {
     function will probably need to be adjusted to grab more tweets
     (run the function more than once, stop if it grabs less than 200 tweets?).
     */
-  console.log(response.data);
   response.data.forEach((tweet) => {
     // maybe get rid of very old tweets ? (> 1 week?)
     tweets.push(tweet.text.slice(0, -24));
