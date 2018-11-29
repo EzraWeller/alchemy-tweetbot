@@ -5,8 +5,7 @@ node_modules
 .env
 
 # Docker
-docker-compose.yml
-Dockerfile
+.dockerignore
 
 # aws key
 alchemy-tweetbot-key.pem
