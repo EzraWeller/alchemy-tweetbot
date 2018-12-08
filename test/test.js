@@ -71,12 +71,14 @@ const testGetTweetableProposals = async () => {
     testProposalsDict[Object.keys(testProposalsDict)[0]].submittedTime = rightNow;
     testProposalsDict[Object.keys(testProposalsDict)[1]].submittedTime = rightNow;
     testProposalsDict[Object.keys(testProposalsDict)[2]].boostedTime = rightNow;
-    testProposalsDict[Object.keys(testProposalsDict)[3]].executedTime = rightNow;
+    testProposalsDict[Object.keys(testProposalsDict)[3]].executionTime = rightNow;
+    testProposalsDict[Object.keys(testProposalsDict)[4]].executionTime = rightNow;
+    testProposalsDict[Object.keys(testProposalsDict)[5]].boostedTime = rightNow;
     const tweetableProposals = await tweetbot.getTweetableProposals(testTweets, testProposalsDict);
     const total = (tweetableProposals.newProposals.length +
                    tweetableProposals.newBoostedProposals.length +
                    tweetableProposals.newPassedProposals.length);
-    if(total === 1) {
+    if(total === 3) {
       console.log("--Passed.");
       passedCount += 1;
     } else {

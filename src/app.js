@@ -89,7 +89,7 @@ const tweetableProposals = (tweets, proposals) => {
   const proposalsToTweet = {newProposals: [], newBoostedProposals: [], newPassedProposals: []};
   Object.keys(proposals).forEach((proposalId) => {
     if(proposals[proposalId].executionTime === 0 && // check for proposals not boosted or passed
-      proposals[proposalId].boostedTime === 0 &&
+      proposals[proposalId].boostedTime === 0 && // and submitted in the past 3 weeks
       proposals[proposalId].submittedTime > ((Math.floor(Date.now()/1000))-18144e2)) {
           let nTweet = `New proposal posted to Genesis: "${proposals[proposalId].title}"`;
           if(nTweet.length > 115) { nTweet = nTweet.slice(0,115)+"…"}
@@ -117,7 +117,7 @@ const tweetableProposals = (tweets, proposals) => {
           }
 
     } else if(proposals[proposalId].executionTime > ((Math.floor(Date.now()/1000))-12096e2)) {
-      // check for passed proposals
+      // check for proposals passed in the last 2 weeks
           let pTweet = `Genesis proposal passed: "${proposals[proposalId].title}"`;
           if(pTweet.length > 115) { pTweet = pTweet.slice(0,115)+"…"}
           pTweet = removeAmps(pTweet);
