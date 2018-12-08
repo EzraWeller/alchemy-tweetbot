@@ -62,15 +62,17 @@ function findMatch(query, array) {
     if(matchFound === false) {
       let queryA = query.split(' ');
       let itemA = item.split(' ');
-      let mismatches = 0;
+      let mismatches = {};
       let wordIndex = 0;
       queryA.forEach((qWord) => {
         if(qWord !== itemA[wordIndex]) {
-          ++mismatches;
+          mismatches[qWord] = itemA[wordIndex];
         }
         ++wordIndex;
       })
-      if(mismatches <= 1) {
+      if(Object.keys(mismatches).length <= 1 &&
+      mismatches['boosted:'] !== 'passed:' &&
+      mismatches['passed:'] !== 'boosted:') {
         matchFound = true;
       }
     }
@@ -81,8 +83,9 @@ function findMatch(query, array) {
 // function to find proposals that haven't yet been tweeted about
 const tweetableProposals = (tweets, proposals) => {
   // replace ampersands
-  function removeAmps(string) {
+  function removeOddChars(string) {
     let noAmps = string.replace(/&(?!amp;)/g, '&amp;');
+    // noOddChars = noAmps.replace(/'/g, "\'");
     return noAmps;
   }
   console.log("finding untweeted proposals");
@@ -90,10 +93,10 @@ const tweetableProposals = (tweets, proposals) => {
   Object.keys(proposals).forEach((proposalId) => {
     if(proposals[proposalId].executionTime === 0 && // check for proposals not boosted or passed
       proposals[proposalId].boostedTime === 0 && // and submitted in the past 3 weeks
-      proposals[proposalId].submittedTime > ((Math.floor(Date.now()/1000))-18144e2)) {
+      proposals[proposalId].submittedTime > (Math.floor(Date.now()/1000)-18144e2)) {
           let nTweet = `New proposal posted to Genesis: "${proposals[proposalId].title}"`;
           if(nTweet.length > 115) { nTweet = nTweet.slice(0,115)+"…"}
-          nTweet = removeAmps(nTweet);
+          nTweet = removeOddChars(nTweet);
 
           if(proposals[proposalId].submittedTime + // check for expired regular proposals
              proposals[proposalId].preBoostedVotePeriodLimit <
@@ -107,7 +110,7 @@ const tweetableProposals = (tweets, proposals) => {
       proposals[proposalId].boostedTime > 0) {
           let bTweet = `Genesis proposal boosted: "${proposals[proposalId].title}"`;
           if(bTweet.length > 115) { bTweet = bTweet.slice(0,115)+"…"}
-          bTweet = removeAmps(bTweet);
+          bTweet = removeOddChars(bTweet);
           if(proposals[proposalId].boostedTime + // check for expired boosted proposals
              proposals[proposalId].boostedVotePeriodLimit <
              Math.floor(Date.now()/1000)) {
@@ -116,11 +119,11 @@ const tweetableProposals = (tweets, proposals) => {
             proposalsToTweet.newBoostedProposals.push(proposals[proposalId]);
           }
 
-    } else if(proposals[proposalId].executionTime > ((Math.floor(Date.now()/1000))-12096e2)) {
+    } else if(proposals[proposalId].executionTime > (Math.floor(Date.now()/1000)-12096e2)) {
       // check for proposals passed in the last 2 weeks
           let pTweet = `Genesis proposal passed: "${proposals[proposalId].title}"`;
           if(pTweet.length > 115) { pTweet = pTweet.slice(0,115)+"…"}
-          pTweet = removeAmps(pTweet);
+          pTweet = removeOddChars(pTweet);
 
           if(findMatch(pTweet, tweets) === false) {
             proposalsToTweet.newPassedProposals.push(proposals[proposalId]);

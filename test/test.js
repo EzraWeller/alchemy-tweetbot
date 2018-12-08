@@ -11,7 +11,7 @@ const twitterFakeId = {
 const testData = require("./test-data/test.json");
 const testProposalsArray = require("./test-data/testProposalsArray.json");
 const testTweets = [
-  'New proposal posted to Genesis: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas lacinia urna sed…"',
+  'New proposal posted to Genesis: "Lorem\'s ipsum dolor sit amet, consectetur adipiscing elit. Maecenas lacinia urna s…"',
   'Genesis proposal boosted: "test newly boosted proposal with link twer.fasdfaslkj.org/asdf"',
   'Genesis proposal passed: "test &amp; newly &amp; passed &amp; proposal"'
 ];
