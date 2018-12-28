@@ -12,13 +12,13 @@ async function start() {
     const testResults = await testbot.runAllTests();
 
     if(testResults[0] === 4 && testResults[1] === 0){
-      console.log(`Tweetbot starting now, ${new Date}. Interval minutes: ${tweetbot.interval/60000}.`);
-      tweetbot.tweetAllNewProposals(tweetbot.url, tweetbot.twit);
+      console.log(`Tweetbot starting now, ${new Date}. Interval minutes: ${tweetbot.tweetInterval/60000}.`);
+      tweetbot.tweetNewProposals(tweetbot.cacheURL, tweetbot.twitterId);
 
       setInterval(() => {
         console.log(`Next round starting now: ${new Date}`);
-        tweetbot.tweetAllNewProposals(tweetbot.url, tweetbot.twit);
-      }, tweetbot.interval);
+        tweetbot.tweetNewProposals(tweetbot.cacheURL, tweetbot.twitterId);
+      }, tweetbot.tweetInterval);
     } else {
       start();
     }

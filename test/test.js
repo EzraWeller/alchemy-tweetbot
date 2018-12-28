@@ -10,20 +10,46 @@ const twitterFakeId = {
 
 const testData = require("./test-data/test.json");
 const testProposalsArray = require("./test-data/testProposalsArray.json");
-const testTweets = [
-  'New proposal posted to Genesis: "Lorem\'s ipsum dolor sit amet, consectetur adipiscing elit. Maecenas lacinia urna s…"',
-  'Genesis proposal boosted: "test newly boosted proposal with link twer.fasdfaslkj.org/asdf"',
-  'Genesis proposal passed: "test &amp; newly &amp; passed &amp; proposal"'
-];
+const testTweets = {
+  data: [
+    {
+      text: 'New proposal posted to Genesis: "Lorem\'s ipsum dolor sit amet, consectetur adipiscing elit. Maecenas lacinia urna s…" https://t.co/ZIuWtonM6w',
+      entities: {
+        urls: []
+      }
+    },
+    {
+      text: 'Genesis proposal boosted: "test newly boosted proposal with link twer.fasdfaslkj.org/asdf" https://t.co/ZIuWtonM6w',
+      entities: {
+        urls: [
+          {
+            url: 'twer.fasdfaslkj.org/asdf',
+            display_url: 'https://www.gps.com'
+          },
+          {
+            url: "",
+            display_url: "alchemy"
+          }
+        ]
+      }
+    },
+    {
+      text: 'Genesis proposal passed: "test &amp; newly &amp; passed &amp; proposal" https://t.co/ZIuWtonM6w',
+      entities: {
+        urls: []
+      }
+    }
+  ]
+};
 const testProposalsDict = require("./test-data/testProposalsDict.json");
 
 passedCount = 0;
 failedCount = 0;
 
-const testTwitInstance = async () => {
+const testTwitterAccount = async () => {
   console.log("twitterAccount should create a twit instance");
   try {
-    const twitter = await tweetbot.twitInstance(twitterFakeId);
+    const twitter = await tweetbot.twitterAccount(twitterFakeId);
     if(twitter.config.consumer_key) {
       console.log("--Passed.");
       passedCount += 1;
@@ -39,10 +65,10 @@ const testTwitInstance = async () => {
   }
 }
 
-const testGetDataCache = async () => {
+const testGetProposals = async () => {
   console.log("getProposals should grab a JSON file with proposals that have daoAvatarAddresses.");
   try {
-    const cachedProposals = await tweetbot.getDataCache(cacheURL);
+    const cachedProposals = await tweetbot.getProposals(cacheURL);
     if(cachedProposals[Object.keys(cachedProposals)[0]].daoAvatarAddress) {
       console.log("--Passed.");
       passedCount += 1;
@@ -58,7 +84,7 @@ const testGetDataCache = async () => {
   }
 }
 
-const testGetTweetableProposals = async () => {
+const testTweetableProposals = async () => {
   console.log("tweetableProposals should find untweeted proposals, including edge cases");
   try {
     /*
@@ -74,7 +100,8 @@ const testGetTweetableProposals = async () => {
     testProposalsDict[Object.keys(testProposalsDict)[3]].executionTime = rightNow;
     testProposalsDict[Object.keys(testProposalsDict)[4]].executionTime = rightNow;
     testProposalsDict[Object.keys(testProposalsDict)[5]].boostedTime = rightNow;
-    const tweetableProposals = await tweetbot.getTweetableProposals(testTweets, testProposalsDict);
+    const tweets = tweetbot.editTweetURLs(testTweets);
+    const tweetableProposals = await tweetbot.tweetableProposals(tweets, testProposalsDict);
     const total = (tweetableProposals.newProposals.length +
                    tweetableProposals.newBoostedProposals.length +
                    tweetableProposals.newPassedProposals.length);
@@ -109,7 +136,7 @@ const testTweet = async () => {
   console.log("tweet function should try to tweet about all the proposals in the new proposals dict");
   try {
     const twitter = await mockTwit();
-    const tweetOutput = await tweetbot.tweetProposalSet(testProposalsArray,
+    const tweetOutput = await tweetbot.tweet(testProposalsArray,
                               "new", "New proposal posted to Genesis", twitter);
     const results = twitter.getResults();
     if(results[0].slice(0,19) === 'New proposal posted') {
@@ -130,12 +157,12 @@ const testTweet = async () => {
 // run all tests
 const runAllTests = async () => {
   console.log("Running all tests:")
-  await testTwitInstance();
-  await testGetDataCache();
-  await testGetTweetableProposals();
+  await testTwitterAccount();
+  await testGetProposals();
+  await testTweetableProposals();
   await testTweet();
   console.log(`${passedCount} tests passed. ${failedCount} tests failed.`);
   return [passedCount, failedCount];
 }
 
-module.exports = { runAllTests: runAllTests }
+module.exports = { runAllTests }
