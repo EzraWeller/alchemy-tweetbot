@@ -32,10 +32,32 @@ const getProposals = async (url) => {
   return response.data.proposals;
 }
 
+// put original URLs back in a tweet
+function fixURLs(tweetText, tweetURLs) {
+  let newTweetText = tweetText;
+  tweetURLs.forEach((url) => {
+    if(url.display_url.slice(0,7) !== 'alchemy') {
+      newTweetText = newTweetText.replace(url.url, url.display_url);
+    }
+  })
+  return newTweetText;
+}
+
+// function to fix all URLs in all tweets
+function editTweetURLs(tweets) {
+  let editedTweets = [];
+  tweets.data.forEach((tweet) => {
+    // maybe get rid of very old tweets ? (> 1 week?)
+    let tweetText = tweet.text.slice(0, -24)
+    if(tweet.entities.urls.length > 1) { tweetText = fixURLs(tweetText, tweet.entities.urls) };
+    editedTweets.push(tweetText);
+  });
+  return editedTweets;
+}
+
 // function to grab all tweets from the twitter account
 const getTweets = async (twitterDict) => {
   console.log("getting already tweeted tweets");
-  const tweets = [];
   const response = await twitterDict.get('statuses/user_timeline',
     { id_str: '1043553688424452097', count: 200 });
     /*
@@ -44,10 +66,7 @@ const getTweets = async (twitterDict) => {
     function will probably need to be adjusted to grab more tweets
     (run the function more than once, stop if it grabs less than 200 tweets?).
     */
-  response.data.forEach((tweet) => {
-    // maybe get rid of very old tweets ? (> 1 week?)
-    tweets.push(tweet.text.slice(0, -24));
-  });
+  let tweets = editTweetURLs(response);
   return tweets;
 }
 
@@ -58,79 +77,71 @@ function findMatch(query, array) {
     if(query === item) {
       matchFound = true;
     }
-    // if not a match, compare word by word, allowing 1 mismatch
-    if(matchFound === false) {
-      let queryA = query.split(' ');
-      let itemA = item.split(' ');
-      let mismatches = 0;
-      let wordIndex = 0;
-      queryA.forEach((qWord) => {
-        if(qWord !== itemA[wordIndex]) {
-          ++mismatches;
-        }
-        ++wordIndex;
-      })
-      if(mismatches <= 1) {
-        matchFound = true;
-      }
-    }
   });
   return matchFound;
 }
 
+// replace ampersands
+function removeOddChars(string) {
+  let noAmps = string.replace(/&(?!amp;)/g, '&amp;');
+  return noAmps;
+}
+
+function filterTweet(baseString, proposal, tweets) {
+  let tweet = baseString+`"${proposal.title}"`;
+  if(tweet.length > 116) { tweet = tweet.slice(0,115)+'…"'};
+  tweet = removeOddChars(tweet);
+
+  if(findMatch(tweet, tweets) === false) {
+    return true
+  }
+}
+
 // function to find proposals that haven't yet been tweeted about
 const tweetableProposals = (tweets, proposals) => {
-  // replace ampersands
-  function removeAmps(string) {
-    let noAmps = string.replace(/&(?!amp;)/g, '&amp;');
-    return noAmps;
-  }
   console.log("finding untweeted proposals");
   const proposalsToTweet = {newProposals: [], newBoostedProposals: [], newPassedProposals: []};
   Object.keys(proposals).forEach((proposalId) => {
-    if(proposals[proposalId].executionTime === 0 && // check for proposals not boosted or passed
+    // check for proposals not boosted or passed and submitted in the past 3 weeks
+    // and not expired
+    if(proposals[proposalId].executionTime === 0 &&
       proposals[proposalId].boostedTime === 0 &&
-      proposals[proposalId].submittedTime > ((Math.floor(Date.now()/1000))-18144e2)) {
-          let nTweet = `New proposal posted to Genesis: "${proposals[proposalId].title}"`;
-          if(nTweet.length > 115) { nTweet = nTweet.slice(0,115)+"…"}
-          nTweet = removeAmps(nTweet);
+      proposals[proposalId].submittedTime > (Math.floor(Date.now()/1000)-18144e2) &&
+      (proposals[proposalId].submittedTime +
+      proposals[proposalId].preBoostedVotePeriodLimit >
+      Math.floor(Date.now()/1000))) {
 
-          if(proposals[proposalId].submittedTime + // check for expired regular proposals
-             proposals[proposalId].preBoostedVotePeriodLimit <
-             Math.floor(Date.now()/1000)) {
-          // skip it
-          } else if(findMatch(nTweet, tweets) === false) {
-            proposalsToTweet.newProposals.push(proposals[proposalId]);
-          }
+        if(filterTweet("New proposal posted to Genesis: ",
+                        proposals[proposalId], tweets) === true) {
+          proposalsToTweet.newProposals.push(proposals[proposalId]);
+        }
 
-    } else if(proposals[proposalId].executionTime === 0 && // check for boosted proposals not passed
-      proposals[proposalId].boostedTime > 0) {
-          let bTweet = `Genesis proposal boosted: "${proposals[proposalId].title}"`;
-          if(bTweet.length > 115) { bTweet = bTweet.slice(0,115)+"…"}
-          bTweet = removeAmps(bTweet);
-          if(proposals[proposalId].boostedTime + // check for expired boosted proposals
-             proposals[proposalId].boostedVotePeriodLimit <
-             Math.floor(Date.now()/1000)) {
-            // skip it
-          } else if(findMatch(bTweet, tweets) === false) {
-            proposalsToTweet.newBoostedProposals.push(proposals[proposalId]);
-          }
+    // check for boosted proposals not passed and not expired
+    } else if(proposals[proposalId].executionTime === 0 &&
+              proposals[proposalId].boostedTime > 0 &&
+              (proposals[proposalId].boostedTime +
+              proposals[proposalId].boostedVotePeriodLimit >
+              Math.floor(Date.now()/1000))) {
 
-    } else if(proposals[proposalId].executionTime > ((Math.floor(Date.now()/1000))-12096e2)) {
-      // check for passed proposals
-          let pTweet = `Genesis proposal passed: "${proposals[proposalId].title}"`;
-          if(pTweet.length > 115) { pTweet = pTweet.slice(0,115)+"…"}
-          pTweet = removeAmps(pTweet);
+        if(filterTweet("Genesis proposal boosted: ",
+                        proposals[proposalId], tweets) === true) {
+          proposalsToTweet.newBoostedProposals.push(proposals[proposalId]);
+        }
 
-          if(findMatch(pTweet, tweets) === false) {
-            proposalsToTweet.newPassedProposals.push(proposals[proposalId]);
-          }
+    // check for proposals passed within the last 2 weeks
+    } else if(proposals[proposalId].executionTime > (Math.floor(Date.now()/1000)-12096e2)) {
+
+        if(filterTweet("Genesis proposal passed: ",
+                        proposals[proposalId], tweets) === true) {
+          proposalsToTweet.newPassedProposals.push(proposals[proposalId]);
+        }
 
     }
   })
   const total = (proposalsToTweet.newProposals.length +
                  proposalsToTweet.newBoostedProposals.length +
                  proposalsToTweet.newPassedProposals.length);
+
   console.log("Found--");
   console.log(`${proposalsToTweet.newProposals.length} untweeted new proposals,`);
   console.log(`${proposalsToTweet.newBoostedProposals.length} untweeted newly boosted proposals,`);
@@ -193,13 +204,15 @@ const tweetNewProposals = async (dataURL, twitterDict) => {
 }
 
 module.exports = {
-  twitInstance: twitterAccount,
-  getDataCache: getProposals,
-  getOldTweets: getTweets,
-  getTweetableProposals: tweetableProposals,
-  tweetProposalSet: tweet,
-  tweetAllNewProposals: tweetNewProposals,
-  twit: twitterId,
-  url: cacheURL,
-  interval: tweetInterval
+  twitterAccount,
+  getProposals,
+  getTweets,
+  tweetableProposals,
+  tweet,
+  tweetNewProposals,
+  twitterId,
+  editTweetURLs,
+  cacheURL,
+  tweetInterval,
+  twitterId
 }
