@@ -1,5 +1,5 @@
 # alchemy-tweetbot
-Rough tweetbot for tweeting out the activity of a DAO built on DAOstack's Alchemy app.
+Rough tweetbot for tweeting out the activity of a DAO built on DAOstack's Alchemy app ([example](https://twitter.com/GenesisAlphaBo1)).
 
 # Set-up
 
