@@ -23,4 +23,4 @@ TEST=false
 ```
  
 # Deploying
-I recommend hosting on AWS with Docker.
+I recommend hosting on an AWS instance with Docker.
