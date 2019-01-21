@@ -59,6 +59,7 @@ function editTweetURLs(tweets) {
 const getTweets = async (twitterDict) => {
   console.log("getting already tweeted tweets");
   const response = await twitterDict.get('statuses/user_timeline',
+    // your twitter bot's id string
     { id_str: '1043553688424452097', count: 200 });
     /*
     NOTE: Not sure what this will do when there are > 200 tweets, and
@@ -89,7 +90,7 @@ function removeOddChars(string) {
 
 function filterTweet(baseString, proposal, tweets) {
   let tweet = baseString+`"${proposal.title}"`;
-  if(tweet.length > 116) { tweet = tweet.slice(0,115)+'…"'};
+  if(tweet.length > 116) { tweet = tweet.slice(0,115)+'…'};
   tweet = removeOddChars(tweet);
 
   if(findMatch(tweet, tweets) === false) {
