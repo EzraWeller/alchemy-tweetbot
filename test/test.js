@@ -10,10 +10,11 @@ const twitterFakeId = {
 
 const testData = require("./test-data/test.json");
 const testProposalsArray = require("./test-data/testProposalsArray.json");
+const testProposalsDict = require("./test-data/testProposalsDict.json");
 const testTweets = {
   data: [
     {
-      text: 'New proposal posted to Genesis: "Lorem\'s ipsum dolor sit amet, consectetur adipiscing elit. Maecenas lacinia urna s…" https://t.co/ZIuWtonM6w',
+      text: 'New proposal posted to Genesis: "Lorem\'s ipsum dolor sit amet, consectetur adipiscing elit. Maecenas lacinia urna s… https://t.co/ZIuWtonM6w',
       entities: {
         urls: []
       }
@@ -38,10 +39,15 @@ const testTweets = {
       entities: {
         urls: []
       }
+    },
+    {
+      text: 'Genesis proposal passed: "Establishing a norm: for proposals requesting more than 1 ETH, downvote if proposer is no… https://t.co/t37vFEXMqw',
+      entities: {
+        urls: []
+      }
     }
   ]
 };
-const testProposalsDict = require("./test-data/testProposalsDict.json");
 
 passedCount = 0;
 failedCount = 0;
